@@ -1,8 +1,12 @@
-from django.urls import path
-from bookings.views import BookingListCreateView, BookingDetailView, CheckAvailabilityView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import BookingViewSet, CheckAvailabilityView
+
+# Create a router and register your viewset for Booking
+router = DefaultRouter()
+router.register(r'bookings', BookingViewSet, basename='booking')
 
 urlpatterns = [
-    path('', BookingListCreateView.as_view(), name='booking-list'),
-    path('<int:id>/', BookingDetailView.as_view(), name='booking-detail'),
-    path('check-availability/', CheckAvailabilityView.as_view(), name='check-availability'),
+    path('', include(router.urls)),  # Automatically generates CRUD endpoints for bookings
+    path('check-availability/', CheckAvailabilityView.as_view(), name='check-availability'),  # Custom availability check
 ]

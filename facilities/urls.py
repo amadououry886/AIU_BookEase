@@ -1,7 +1,11 @@
-from django.urls import path
-from facilities.views import FacilityListView, FacilityDetailView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import FacilityViewSet
+
+# Create a router and register your viewset
+router = DefaultRouter()
+router.register(r'facilities', FacilityViewSet, basename='facility')
 
 urlpatterns = [
-    path('', FacilityListView.as_view(), name='facility-list'),
-    path('<int:id>/', FacilityDetailView.as_view(), name='facility-detail'),
+    path('', include(router.urls)),  # This will generate all CRUD routes automatically
 ]
