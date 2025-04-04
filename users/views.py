@@ -6,6 +6,8 @@ from rest_framework import status, permissions
 from django.contrib.auth import authenticate
 from .models import User
 from .serializers import UserSerializer
+from .permissions import IsStudent, IsAdmin, IsStaff
+from django.contrib.auth.decorators import login_required
 
 # ViewSet to handle CRUD operations for Users (excluding registration and login)
 class UserViewSet(viewsets.ModelViewSet):
@@ -14,7 +16,7 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        return self.request.user
+        return self.request.user  # Ensures only the logged-in user's data is accessed
 
 # User Registration (still a CreateAPIView since it's a different flow)
 class UserRegisterView(generics.CreateAPIView):
@@ -28,15 +30,48 @@ class UserLoginView(APIView):
         password = request.data.get("password")
         user = authenticate(email=email, password=password)
         if user:
+            # Generate token for authenticated user
             token, created = Token.objects.get_or_create(user=user)
-            return Response({"token": token.key}, status=status.HTTP_200_OK)
+            return Response({
+                "token": token.key,
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "username": user.username,
+                    "role": user.role
+                }
+            }, status=status.HTTP_200_OK)
         return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 # User Profile (updated to allow updates and retrieval of the user’s profile)
 class UserProfileView(generics.RetrieveUpdateAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]  # Ensure user is authenticated to access their profile
     serializer_class = UserSerializer
 
     def get_object(self):
-        return self.request.user
+        return self.request.user  # Return only the logged-in user's data
 
+# Admin Profile View (only admin can access their profile)
+class AdminProfileView(generics.RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]  # Only admin can access this
+    serializer_class = UserSerializer
+
+    def get_object(self):
+        return self.request.user  # Return the logged-in user's data
+
+# Staff Profile View (only staff can access their profile)
+class StaffProfileView(generics.RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsStaff]  # Only staff can access this
+    serializer_class = UserSerializer
+
+    def get_object(self):
+        return self.request.user  # Return the logged-in user's data
+
+# Student Profile View (only student can access their profile)
+class StudentProfileView(generics.RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsStudent]  # Only student can access this
+    serializer_class = UserSerializer
+
+    def get_object(self):
+        return self.request.user  # Return the logged-in user's data
